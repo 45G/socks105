@@ -3,6 +3,13 @@
 #include <arpa/inet.h>
 #include "socks105.h"
 
+#define CHECK(how, err, jump) \
+{ \
+	(err) = (how); \
+	if ((err) < 0) \
+		goto jump; \
+}
+
 struct bufstream
 {
 	uint8_t *buf;
@@ -20,13 +27,6 @@ void *bufstream_take(struct bufstream *bs, size_t len)
 	bs->len -= len;
 	
 	return ret;
-}
-
-#define CHECK(how, err, jump) \
-{ \
-	(err) = (how); \
-	if ((err) < 0) \
-		goto jump; \
 }
 
 static int byte_parse(struct bufstream *bs, uint8_t *byte)
