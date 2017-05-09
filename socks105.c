@@ -123,6 +123,12 @@ static int ipv6_pack(struct bufstream *bs, uint8_t *ipv6)
 
 static int blob_parse(struct bufstream *bs, size_t len, void **str, int as_string)
 {
+	if (len == 0 && !as_string)
+	{
+		*str = NULL;
+		return 0;
+	}
+	
 	uint8_t *data = bufstream_take(bs, len);
 	if (!data)
 		return -SOCKS105_ERROR_BUFFER;
@@ -187,6 +193,13 @@ static int auth_info_parse(struct bufstream *bs, struct socks105_auth_info *auth
 	CHECK(byte_parse(bs, &n_data), err, fail);
 	
 	auth_info->count = n_adverts + n_data;
+	
+	if (auth_info->count == 0)
+	{
+		auth_info->auth_data = NULL;
+		return 0;
+	}
+	
 	auth_info->auth_data = malloc(auth_info->count * sizeof(struct socks105_auth_data));
 	if (!auth_info->auth_data)
 		return -SOCKS105_ERROR_ALLOC;
