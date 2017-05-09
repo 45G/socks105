@@ -356,15 +356,16 @@ static void server_info_cleanup(struct socks105_server_info *server_info)
 		free(server_info->addr.domain);
 }
 
-ssize_t socks105_request_parse(void *buf, size_t buf_len, struct socks105_request **req)
+ssize_t socks105_request_parse(void *buf, size_t buf_len, struct socks105_request **preq)
 {
 	int err;
 	struct bufstream bs = { buf, buf_len };
 	
-	*req = malloc(sizeof(struct socks105_request));
-	if (!*req)
+	struct socks105_request *req = malloc(sizeof(struct socks105_request));
+	if (!req)
 		return -SOCKS105_ERROR_ALLOC;
-	bzero(*req, sizeof(struct socks105_request));
+	bzero(req, sizeof(struct socks105_request));
+	*preq = req;
 	
 	/* version */
 	uint8_t ver;
@@ -376,26 +377,26 @@ ssize_t socks105_request_parse(void *buf, size_t buf_len, struct socks105_reques
 	}
 	
 	/* auth info */
-	CHECK(auth_info_parse(&bs, &(*req)->auth_info, 1), err, fail);
+	CHECK(auth_info_parse(&bs, &req->auth_info, 1), err, fail);
 	
 	/* req type */
-	CHECK(byte_to_int_parse(&bs, (int *)&(*req)->req_type), err, fail);
-	if ((*req)->req_type != SOCKS105_REQ_TCP_CONNECT && (*req)->req_type != SOCKS105_REQ_TCP_LISTEN && (*req)->req_type != SOCKS105_REQ_UDP)
+	CHECK(byte_to_int_parse(&bs, (int *)&req->req_type), err, fail);
+	if (req->req_type != SOCKS105_REQ_TCP_CONNECT && req->req_type != SOCKS105_REQ_TCP_LISTEN && req->req_type != SOCKS105_REQ_UDP)
 		return -SOCKS105_ERROR_INVALID;
 	
 	/* tfo */
-	CHECK(byte_to_int_parse(&bs, &(*req)->tfo), err, fail);
+	CHECK(byte_to_int_parse(&bs, &req->tfo), err, fail);
 	
 	/* server */
-	CHECK(server_info_parse(&bs, &(*req)->server_info), err, fail);
+	CHECK(server_info_parse(&bs, &req->server_info), err, fail);
 	
 	/* initial data */
-	CHECK(short_parse(&bs, &(*req)->initial_data_size), err, fail);
-	CHECK(blob_parse(&bs, (*req)->initial_data_size, &(*req)->initial_data, 0), err, fail);
+	CHECK(short_parse(&bs, &req->initial_data_size), err, fail);
+	CHECK(blob_parse(&bs, req->initial_data_size, &req->initial_data, 0), err, fail);
 	
 	return buf_len - bs.len;
 fail:
-	socks105_request_delete(*req);
+	socks105_request_delete(req);
 	
 	return err;
 }
@@ -441,4 +442,34 @@ void socks105_request_delete(struct socks105_request *req)
 	if (req->initial_data)
 		free(req->initial_data);
 	free(req);
+}
+
+int socks105_initial_reply_parse(void *buf, size_t buf_len, struct socks105_initial_reply **pirep)
+{
+	
+}
+
+void socks105_initial_reply_delete(struct socks105_initial_reply *irep)
+{
+	
+}
+
+ssize_t socks105_initial_reply_pack(struct socks105_initial_reply *irep, void *buf, size_t buf_len)
+{
+	
+}
+
+int socks105_final_reply_parse(void *buf, size_t buf_len, struct socks105_final_reply **pfrep)
+{
+	
+}
+
+void socks105_final_reply_delete(struct socks105_final_reply *frep)
+{
+	
+}
+
+ssize_t socks105_final_reply_pack(struct socks105_final_reply *frep, void *buf, size_t buf_len)
+{
+	
 }
