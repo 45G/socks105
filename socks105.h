@@ -104,41 +104,16 @@ struct socks105_final_reply
 	size_t data_offset;
 };
 
-//struct socks105_request *socks105_request_create();
 ssize_t socks105_request_parse(void *buf, size_t buf_len, struct socks105_request **req);
 void socks105_request_delete(struct socks105_request *req);
 ssize_t socks105_request_pack(struct socks105_request *req, void *buf, size_t buf_len);
 
-//void socks105_request_add_method(uint8_t method, void *data, size_t len);
-//void socks105_request_set_type(enum socks105_req_type type);
-//void socks105_request_set_tfo(int tfo);
-//void socks105_request_set_addr_ipv4(uint32_t ipv4);
-//void socks105_request_set_addr_domain(char *domain);
-//void socks105_request_set_addr_ipv6(uint8_t ipv6[16]);
-//void socks105_request_set_port(uint16_t port);
-//void socks105_request_set_data(void *buf, size_t len);
-
-
-//struct socks105_initial_reply *socks105_initial_reply_create();
 int socks105_initial_reply_parse(void *buf, size_t buf_len, struct socks105_initial_reply **ret);
 void socks105_initial_reply_delete(struct socks105_initial_reply *irep);
 ssize_t socks105_initial_reply_pack(struct socks105_initial_reply *irep, void *buf, size_t buf_len);
 
-//void socks105_initial_reply_set_type(enum socks105_initial_reply_type type);
-//void socks105_initial_reply_set_method(struct socks105_initial_reply *irep, uint8_t method);
-//void socks105_initial_reply_add_method(uint8_t method, void *data, size_t len);
-
-
-//struct socks105_final_reply *socks105_final_reply_create();
 int socks105_final_reply_parse(void *buf, size_t buf_len, struct socks105_final_reply **ret);
 void socks105_final_reply_delete(struct socks105_final_reply *frep);
 ssize_t socks105_final_reply_pack(struct socks105_final_reply *frep, void *buf, size_t buf_len);
-
-//void socks105_final_reply_set_type(enum socks105_final_reply_type type);
-//void socks105_request_set_addr_ipv4(uint32_t ipv4);
-//void socks105_request_set_addr_domain(char *domain);
-//void socks105_request_set_addr_ipv6(uint8_t ipv6[16]);
-//void socks105_request_set_port(uint16_t port);
-//void socks105_final_reply_set_data_offset(struct socks105_final_reply *frep, size_t data_offset);
 
 #endif // SOCKS105_H
