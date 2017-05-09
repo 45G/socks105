@@ -30,7 +30,8 @@ void test_case_basic_request()
 	
 	struct socks105_request *req2;
 	ssize_t size2 = socks105_request_parse(buf, 1500, &req2);
-	
+	//BREAKPOINT
+	socks105_request_delete(req2);
 }
 
 void test_case_basic_initial_reply()
@@ -49,7 +50,8 @@ void test_case_basic_initial_reply()
 	
 	struct socks105_initial_reply *irep2;
 	ssize_t size2 = socks105_initial_reply_parse(buf, 1500, &irep2);
-	
+	//BREAKPOINT
+	socks105_initial_reply_delete(irep2);
 }
 
 void test_case_basic_final_reply()
@@ -72,7 +74,8 @@ void test_case_basic_final_reply()
 	
 	struct socks105_final_reply *frep2;
 	ssize_t size2 = socks105_final_reply_parse(buf, 1500, &frep2);
-	
+	//BREAKPOINT
+	socks105_final_reply_delete(frep2);
 }
 
 int main(int argc, char *argv[])
