@@ -386,6 +386,8 @@ ssize_t socks105_request_parse(void *buf, size_t buf_len, struct socks105_reques
 	
 	/* tfo */
 	CHECK(byte_to_int_parse(&bs, &req->tfo), err, fail);
+	if (req->tfo != 0 && req->tfo != 1)
+		return -SOCKS105_ERROR_INVALID;
 	
 	/* server */
 	CHECK(server_info_parse(&bs, &req->server_info), err, fail);
@@ -406,8 +408,6 @@ ssize_t socks105_request_pack(struct socks105_request *req, void *buf, size_t bu
 	int err;
 	struct bufstream bs = { buf, buf_len };
 	
-	//TODO!!!
-	
 	/* version */
 	CHECK(byte_pack(&bs, 105), err, fail);
 	
@@ -420,6 +420,8 @@ ssize_t socks105_request_pack(struct socks105_request *req, void *buf, size_t bu
 	CHECK(byte_pack(&bs, req->req_type), err, fail);
 	
 	/* tfo */
+	if (req->tfo != 0 && req->tfo != 1)
+		return -SOCKS105_ERROR_INVALID;
 	CHECK(byte_pack(&bs, req->tfo), err, fail);
 	
 	/* server */
@@ -446,17 +448,66 @@ void socks105_request_delete(struct socks105_request *req)
 
 int socks105_initial_reply_parse(void *buf, size_t buf_len, struct socks105_initial_reply **pirep)
 {
+	int err;
+	struct bufstream bs = { buf, buf_len };
 	
+	struct socks105_initial_reply *irep = malloc(sizeof(struct socks105_initial_reply));
+	if (!irep)
+		return -SOCKS105_ERROR_ALLOC;
+	bzero(irep, sizeof(struct socks105_request));
+	*pirep = irep;
+	
+	/* version */
+	uint8_t ver;
+	CHECK(byte_parse(&bs, &ver), err, fail);
+	if (ver != 105)
+	{
+		err = -SOCKS105_ERROR_INVALID;
+		goto fail;
+	}
+	
+	/* type */
+	CHECK(byte_to_int_parse(&bs, (int *)&irep->irep_type), err, fail);
+	if (irep->irep_type != SOCKS105_INITIAL_REPLY_SUCCESS && irep->irep_type != SOCKS105_INITIAL_REPLY_FAILURE)
+		return -SOCKS105_ERROR_INVALID;
+	
+	/* auth method */
+	CHECK(byte_parse(&bs, &irep->method), err, fail);
+	
+	/* auth info */
+	CHECK(auth_info_parse(&bs, &irep->auth_info, 0), err, fail);
+	
+fail:
+	socks105_initial_reply_delete(irep);
+	return err;
 }
 
 void socks105_initial_reply_delete(struct socks105_initial_reply *irep)
 {
-	
+	auth_info_cleanup(&irep->auth_info);
+	free(irep);
 }
 
 ssize_t socks105_initial_reply_pack(struct socks105_initial_reply *irep, void *buf, size_t buf_len)
 {
+	int err;
+	struct bufstream bs = { buf, buf_len };
 	
+	/* version */
+	CHECK(byte_pack(&bs, 105), err, fail);
+	
+	/* req type */
+	if (irep->irep_type != SOCKS105_INITIAL_REPLY_SUCCESS && irep->irep_type != SOCKS105_INITIAL_REPLY_FAILURE)
+		return -SOCKS105_ERROR_INVALID;
+	CHECK(byte_pack(&bs, irep->irep_type), err, fail);
+	
+	/* auth info */
+	CHECK(auth_info_pack(&bs, &irep->auth_info), err, fail);
+	
+	return buf_len - bs.len;
+	
+fail:
+	return err;
 }
 
 int socks105_final_reply_parse(void *buf, size_t buf_len, struct socks105_final_reply **pfrep)

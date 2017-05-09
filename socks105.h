@@ -92,14 +92,14 @@ struct socks105_request
 
 struct socks105_initial_reply
 {
-	enum socks105_initial_reply_type type;
+	enum socks105_initial_reply_type irep_type;
 	uint8_t method;
 	struct socks105_auth_info auth_info;
 };
 
 struct socks105_final_reply
 {
-	enum socks105_final_reply_type type;
+	enum socks105_final_reply_type frep_type;
 	struct socks105_server_info server_info;
 	size_t data_offset;
 };
