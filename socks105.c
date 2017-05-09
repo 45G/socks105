@@ -401,6 +401,13 @@ static int frep_type_sanity(enum socks105_final_reply_type frep_type)
 	return 0;
 }
 
+static int tfo_sanity(uint8_t tfo)
+{
+	if (tfo != 0 && tfo != 1)
+		return -SOCKS105_ERROR_INVALID;
+	return 0;
+}
+
 ssize_t socks105_request_parse(void *buf, size_t buf_len, struct socks105_request **preq)
 {
 	int err;
@@ -410,7 +417,6 @@ ssize_t socks105_request_parse(void *buf, size_t buf_len, struct socks105_reques
 	if (!req)
 		return -SOCKS105_ERROR_ALLOC;
 	bzero(req, sizeof(struct socks105_request));
-	*preq = req;
 	
 	/* version */
 	uint8_t ver;
@@ -426,8 +432,7 @@ ssize_t socks105_request_parse(void *buf, size_t buf_len, struct socks105_reques
 	
 	/* tfo */
 	CHECK(byte_to_int_parse(&bs, &req->tfo), err, fail);
-	if (req->tfo != 0 && req->tfo != 1)
-		return -SOCKS105_ERROR_INVALID;
+	CHECK(tfo_sanity(req->tfo), err, fail);
 	
 	/* server */
 	CHECK(server_info_parse(&bs, &req->server_info), err, fail);
@@ -436,6 +441,7 @@ ssize_t socks105_request_parse(void *buf, size_t buf_len, struct socks105_reques
 	CHECK(short_parse(&bs, &req->initial_data_size), err, fail);
 	CHECK(blob_parse(&bs, req->initial_data_size, &req->initial_data, 0), err, fail);
 	
+	*preq = req;
 	return buf_len - bs.len;
 fail:
 	socks105_request_delete(req);
@@ -459,8 +465,7 @@ ssize_t socks105_request_pack(struct socks105_request *req, void *buf, size_t bu
 	CHECK(byte_pack(&bs, req->req_type), err, fail);
 	
 	/* tfo */
-	if (req->tfo != 0 && req->tfo != 1)
-		return -SOCKS105_ERROR_INVALID;
+	CHECK(tfo_sanity(req->tfo), err, fail);
 	CHECK(byte_pack(&bs, req->tfo), err, fail);
 	
 	/* server */
@@ -485,7 +490,7 @@ void socks105_request_delete(struct socks105_request *req)
 	free(req);
 }
 
-int socks105_initial_reply_parse(void *buf, size_t buf_len, struct socks105_initial_reply **pirep)
+ssize_t socks105_initial_reply_parse(void *buf, size_t buf_len, struct socks105_initial_reply **pirep)
 {
 	int err;
 	struct bufstream bs = { buf, buf_len };
@@ -494,7 +499,6 @@ int socks105_initial_reply_parse(void *buf, size_t buf_len, struct socks105_init
 	if (!irep)
 		return -SOCKS105_ERROR_ALLOC;
 	bzero(irep, sizeof(struct socks105_initial_reply));
-	*pirep = irep;
 	
 	/* version */
 	uint8_t ver;
@@ -510,6 +514,9 @@ int socks105_initial_reply_parse(void *buf, size_t buf_len, struct socks105_init
 	
 	/* auth info */
 	CHECK(auth_info_parse(&bs, &irep->auth_info, 0), err, fail);
+	
+	*pirep = irep;
+	return buf_len - bs.len;
 	
 fail:
 	socks105_initial_reply_delete(irep);
@@ -531,11 +538,7 @@ ssize_t socks105_initial_reply_pack(struct socks105_initial_reply *irep, void *b
 	CHECK(byte_pack(&bs, 105), err, fail);
 	
 	/* irep type */
-	if (irep->irep_type != SOCKS105_INITIAL_REPLY_SUCCESS &&
-		irep->irep_type != SOCKS105_INITIAL_REPLY_FAILURE)
-	{
-		return -SOCKS105_ERROR_INVALID;
-	}
+	CHECK(irep_type_sanity(irep->irep_type), err, fail);
 	CHECK(byte_pack(&bs, irep->irep_type), err, fail);
 	
 	/* auth info */
@@ -547,7 +550,7 @@ fail:
 	return err;
 }
 
-int socks105_final_reply_parse(void *buf, size_t buf_len, struct socks105_final_reply **pfrep)
+ssize_t socks105_final_reply_parse(void *buf, size_t buf_len, struct socks105_final_reply **pfrep)
 {
 	int err;
 	struct bufstream bs = { buf, buf_len };
@@ -556,7 +559,6 @@ int socks105_final_reply_parse(void *buf, size_t buf_len, struct socks105_final_
 	if (!frep)
 		return -SOCKS105_ERROR_ALLOC;
 	bzero(frep, sizeof(struct socks105_final_reply));
-	*pfrep = frep;
 	
 	/* frep type */
 	CHECK(byte_to_int_parse(&bs, (int *)&frep->frep_type), err, fail);
@@ -568,7 +570,9 @@ int socks105_final_reply_parse(void *buf, size_t buf_len, struct socks105_final_
 	/* data offset */
 	CHECK(short_parse(&bs, &frep->data_offset), err, fail);
 	
+	*pfrep = frep;
 	return buf_len - bs.len;
+	
 fail:
 	socks105_final_reply_delete(frep);
 	

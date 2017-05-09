@@ -107,11 +107,11 @@ ssize_t socks105_request_parse(void *buf, size_t buf_len, struct socks105_reques
 void socks105_request_delete(struct socks105_request *req);
 ssize_t socks105_request_pack(struct socks105_request *req, void *buf, size_t buf_len);
 
-int socks105_initial_reply_parse(void *buf, size_t buf_len, struct socks105_initial_reply **pirep);
+ssize_t socks105_initial_reply_parse(void *buf, size_t buf_len, struct socks105_initial_reply **pirep);
 void socks105_initial_reply_delete(struct socks105_initial_reply *irep);
 ssize_t socks105_initial_reply_pack(struct socks105_initial_reply *irep, void *buf, size_t buf_len);
 
-int socks105_final_reply_parse(void *buf, size_t buf_len, struct socks105_final_reply **pfrep);
+ssize_t socks105_final_reply_parse(void *buf, size_t buf_len, struct socks105_final_reply **pfrep);
 void socks105_final_reply_delete(struct socks105_final_reply *frep);
 ssize_t socks105_final_reply_pack(struct socks105_final_reply *frep, void *buf, size_t buf_len);
 
