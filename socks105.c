@@ -356,6 +356,51 @@ static void server_info_cleanup(struct socks105_server_info *server_info)
 		free(server_info->addr.domain);
 }
 
+static int ver_sanity(uint8_t ver)
+{
+	if (ver != 105)
+		return -SOCKS105_ERROR_OTHERVER;
+	return 0;
+}
+
+static int req_type_sanity(enum socks105_req_type req_type)
+{
+	if (req_type != SOCKS105_REQ_TCP_CONNECT &&
+		req_type != SOCKS105_REQ_TCP_LISTEN &&
+		req_type != SOCKS105_REQ_UDP)
+	{
+		return -SOCKS105_ERROR_INVALID;
+	}
+	return 0;
+}
+
+static int irep_type_sanity(enum socks105_initial_reply_type irep_type)
+{
+	if (irep_type != SOCKS105_INITIAL_REPLY_SUCCESS &&
+		irep_type != SOCKS105_INITIAL_REPLY_FAILURE)
+	{
+		return -SOCKS105_ERROR_INVALID;
+	}
+	return 0;
+}
+
+static int frep_type_sanity(enum socks105_final_reply_type frep_type)
+{
+	if (frep_type !=  SOCKS105_FINAL_REPLY_SUCCESS &&
+		frep_type !=  SOCKS105_FINAL_REPLY_FAILURE &&
+		frep_type !=  SOCKS105_FINAL_REPLY_NOT_ALLOWED &&
+		frep_type !=  SOCKS105_FINAL_REPLY_NET_UNREACH &&                                                                              
+		frep_type !=  SOCKS105_FINAL_REPLY_HOST_UNREACH &&                                                                             
+		frep_type !=  SOCKS105_FINAL_REPLY_REFUSED &&                                                                                  
+		frep_type !=  SOCKS105_FINAL_REPLY_TTL_EXPIRED &&                                                                              
+		frep_type !=  SOCKS105_FINAL_REPLY_CMD_NOT_SUPPORTED &&                                                                        
+		frep_type !=  SOCKS105_FINAL_REPLY_ADDR_NOT_SUPPORTED)
+	{
+		return -SOCKS105_ERROR_INVALID;
+	}
+	return 0;
+}
+
 ssize_t socks105_request_parse(void *buf, size_t buf_len, struct socks105_request **preq)
 {
 	int err;
@@ -370,19 +415,14 @@ ssize_t socks105_request_parse(void *buf, size_t buf_len, struct socks105_reques
 	/* version */
 	uint8_t ver;
 	CHECK(byte_parse(&bs, &ver), err, fail);
-	if (ver != 105)
-	{
-		err = -SOCKS105_ERROR_INVALID;
-		goto fail;
-	}
+	CHECK(ver_sanity(ver), err, fail);
 	
 	/* auth info */
 	CHECK(auth_info_parse(&bs, &req->auth_info, 1), err, fail);
 	
 	/* req type */
 	CHECK(byte_to_int_parse(&bs, (int *)&req->req_type), err, fail);
-	if (req->req_type != SOCKS105_REQ_TCP_CONNECT && req->req_type != SOCKS105_REQ_TCP_LISTEN && req->req_type != SOCKS105_REQ_UDP)
-		return -SOCKS105_ERROR_INVALID;
+	CHECK(req_type_sanity(req->req_type), err, fail);
 	
 	/* tfo */
 	CHECK(byte_to_int_parse(&bs, &req->tfo), err, fail);
@@ -415,8 +455,7 @@ ssize_t socks105_request_pack(struct socks105_request *req, void *buf, size_t bu
 	CHECK(auth_info_pack(&bs, &req->auth_info), err, fail);
 	
 	/* req type */
-	if (req->req_type != SOCKS105_REQ_TCP_CONNECT && req->req_type != SOCKS105_REQ_TCP_LISTEN && req->req_type != SOCKS105_REQ_UDP)
-		return -SOCKS105_ERROR_INVALID;
+	CHECK(req_type_sanity(req->req_type), err, fail);
 	CHECK(byte_pack(&bs, req->req_type), err, fail);
 	
 	/* tfo */
@@ -454,22 +493,17 @@ int socks105_initial_reply_parse(void *buf, size_t buf_len, struct socks105_init
 	struct socks105_initial_reply *irep = malloc(sizeof(struct socks105_initial_reply));
 	if (!irep)
 		return -SOCKS105_ERROR_ALLOC;
-	bzero(irep, sizeof(struct socks105_request));
+	bzero(irep, sizeof(struct socks105_initial_reply));
 	*pirep = irep;
 	
 	/* version */
 	uint8_t ver;
 	CHECK(byte_parse(&bs, &ver), err, fail);
-	if (ver != 105)
-	{
-		err = -SOCKS105_ERROR_INVALID;
-		goto fail;
-	}
+	CHECK(ver_sanity(ver), err, fail);
 	
 	/* type */
 	CHECK(byte_to_int_parse(&bs, (int *)&irep->irep_type), err, fail);
-	if (irep->irep_type != SOCKS105_INITIAL_REPLY_SUCCESS && irep->irep_type != SOCKS105_INITIAL_REPLY_FAILURE)
-		return -SOCKS105_ERROR_INVALID;
+	CHECK(irep_type_sanity(irep->irep_type), err, fail);
 	
 	/* auth method */
 	CHECK(byte_parse(&bs, &irep->method), err, fail);
@@ -496,9 +530,12 @@ ssize_t socks105_initial_reply_pack(struct socks105_initial_reply *irep, void *b
 	/* version */
 	CHECK(byte_pack(&bs, 105), err, fail);
 	
-	/* req type */
-	if (irep->irep_type != SOCKS105_INITIAL_REPLY_SUCCESS && irep->irep_type != SOCKS105_INITIAL_REPLY_FAILURE)
+	/* irep type */
+	if (irep->irep_type != SOCKS105_INITIAL_REPLY_SUCCESS &&
+		irep->irep_type != SOCKS105_INITIAL_REPLY_FAILURE)
+	{
 		return -SOCKS105_ERROR_INVALID;
+	}
 	CHECK(byte_pack(&bs, irep->irep_type), err, fail);
 	
 	/* auth info */
@@ -512,15 +549,55 @@ fail:
 
 int socks105_final_reply_parse(void *buf, size_t buf_len, struct socks105_final_reply **pfrep)
 {
+	int err;
+	struct bufstream bs = { buf, buf_len };
 	
+	struct socks105_final_reply *frep = malloc(sizeof(struct socks105_final_reply));
+	if (!frep)
+		return -SOCKS105_ERROR_ALLOC;
+	bzero(frep, sizeof(struct socks105_final_reply));
+	*pfrep = frep;
+	
+	/* frep type */
+	CHECK(byte_to_int_parse(&bs, (int *)&frep->frep_type), err, fail);
+	CHECK(frep_type_sanity(frep->frep_type), err, fail);
+	
+	/* server */
+	CHECK(server_info_parse(&bs, &frep->server_info), err, fail);
+	
+	/* data offset */
+	CHECK(short_parse(&bs, &frep->data_offset), err, fail);
+	
+	return buf_len - bs.len;
+fail:
+	socks105_final_reply_delete(frep);
+	
+	return err;
 }
 
 void socks105_final_reply_delete(struct socks105_final_reply *frep)
 {
-	
+	server_info_cleanup(&frep->server_info);
+	free(frep);
 }
 
 ssize_t socks105_final_reply_pack(struct socks105_final_reply *frep, void *buf, size_t buf_len)
 {
+	int err;
+	struct bufstream bs = { buf, buf_len };
 	
+	/* frep type */
+	CHECK(frep_type_sanity(frep->frep_type), err, fail);
+	CHECK(byte_pack(&bs, frep->frep_type), err, fail);
+	
+	/* server */
+	CHECK(server_info_pack(&bs, &frep->server_info), err, fail);
+	
+	/* data offset */
+	CHECK(short_pack(&bs, frep->data_offset), err, fail);
+	
+	return buf_len - bs.len;
+	
+fail:
+	return err;
 }

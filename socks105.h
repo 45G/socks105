@@ -3,8 +3,6 @@
 
 /*
  * Experimental SCOKS105 implementation
- * 
- * Will crash as soon as something goes wrong
  */
 
 #include <stdlib.h>
@@ -17,6 +15,7 @@ enum socks105_error
 	SOCKS105_ERROR_INVALID     = -1,   /* some invalid field*/
 	SOCKS105_ERROR_ALLOC       = -2,   /* malloc fail */
 	SOCKS105_ERROR_BUFFER      = -3,   /* reached end of buffer */
+	SOCKS105_ERROR_OTHERVER    = -4,   /* socks version other than 105 */
 	SOCKS105_ERROR_UNSUPPORTED = -100, /* unsupported/unimplemented stuff */
 };
 
@@ -101,7 +100,7 @@ struct socks105_final_reply
 {
 	enum socks105_final_reply_type frep_type;
 	struct socks105_server_info server_info;
-	size_t data_offset;
+	uint16_t data_offset;
 };
 
 ssize_t socks105_request_parse(void *buf, size_t buf_len, struct socks105_request **preq);
