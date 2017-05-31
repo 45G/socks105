@@ -12,7 +12,7 @@
 enum socks105_error
 {
 	SOCKS105_ERROR_SUCCESS     = 0,
-	SOCKS105_ERROR_INVALID     = -1,   /* some invalid field*/
+	SOCKS105_ERROR_INVALID     = -1,   /* some invalid field */
 	SOCKS105_ERROR_ALLOC       = -2,   /* malloc fail */
 	SOCKS105_ERROR_BUFFER      = -3,   /* reached end of buffer */
 	SOCKS105_ERROR_OTHERVER    = -4,   /* socks version other than 105 */
