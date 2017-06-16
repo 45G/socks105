@@ -134,7 +134,7 @@ void test_case_wget_google()
 	};
 	
 	int stage = RECV_IREP;
-	int offset;
+	int offset = 0;
 	
 	while (1)
 	{
