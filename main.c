@@ -31,7 +31,7 @@ void test_case_basic_request()
 	
 	struct socks105_request *req2;
 	ssize_t size2 = socks105_request_parse(buf, 1500, &req2);
-	//BREAKPOINT
+	(void)size2;//BREAKPOINT
 	socks105_request_delete(req2);
 }
 
@@ -51,7 +51,7 @@ void test_case_basic_initial_reply()
 	
 	struct socks105_initial_reply *irep2;
 	ssize_t size2 = socks105_initial_reply_parse(buf, 1500, &irep2);
-	//BREAKPOINT
+	(void)size2;//BREAKPOINT
 	socks105_initial_reply_delete(irep2);
 }
 
@@ -75,7 +75,7 @@ void test_case_basic_final_reply()
 	
 	struct socks105_final_reply *frep2;
 	ssize_t size2 = socks105_final_reply_parse(buf, 1500, &frep2);
-	//BREAKPOINT
+	(void)size2;//BREAKPOINT
 	socks105_final_reply_delete(frep2);
 }
 
@@ -165,7 +165,7 @@ void test_case_wget_google()
 		}
 		else if (stage == RECV_FREP)
 		{
-			struct socks105_initial_reply *frep;
+			struct socks105_final_reply *frep;
 			ssize_t size2 = socks105_final_reply_parse(buf + offset, sizeof(buf) - offset, &frep);
 			if (size2 < 0)
 			{
